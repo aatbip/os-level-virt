@@ -24,8 +24,12 @@ static int child_proc(void *arg) {
   printf("namespace pid (child): %d\n", getpid());
   printf("namespace ppid: %d\n", getppid());
 
+  if (mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL) == -1) {
+    perror("mount error");
+  }
+
   mkdir("./proc2", 0555);
-  if (mount("proc", "./proc2", "proc", 0, NULL) == -1) {
+  if (mount("proc", "/proc", "proc", 0, NULL) == -1) {
     perror("mount error");
   }
   printf("mounting procfs\n");
@@ -35,10 +39,9 @@ static int child_proc(void *arg) {
   // }
 
   // printf("here:");
-  // execlp("ps", "ps", (char *)NULL);
+  execlp("sh", "sh", (char *)NULL);
 
-  // perror("execlp");
-  sleep(1000);
+  perror("execlp");
 
   return 0;
 }
@@ -53,9 +56,9 @@ int main(void) {
 
   printf("pid by clone: %d\n", pid);
 
-  // waitpid(pid, NULL, 0);
+  waitpid(pid, NULL, 0);
   // parent proc
-  sleep(10);
+  // sleep(500);
   printf("parent running: \n");
   struct utsname buf;
   uname(&buf);
