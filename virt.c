@@ -8,6 +8,7 @@
 #include <sys/mount.h>
 #include <sys/stat.h>
 #include <sys/utsname.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #define STACK_SIZE 1024 * 64
@@ -23,15 +24,21 @@ static int child_proc(void *arg) {
   printf("namespace pid (child): %d\n", getpid());
   printf("namespace ppid: %d\n", getppid());
 
-  mkdir("/proc2", 0555);
-  if (mount("proc", "/proc2", "proc", 0, NULL) == -1) {
+  mkdir("./proc2", 0555);
+  if (mount("proc", "./proc2", "proc", 0, NULL) == -1) {
     perror("mount error");
   }
   printf("mounting procfs\n");
 
-  execlp("sleep", "sleep", "600", (char *)NULL);
+  // if (chroot(".") == -1) {
+  //   perror("chroot");
+  // }
 
-  perror("execlp");
+  // printf("here:");
+  // execlp("ps", "ps", (char *)NULL);
+
+  // perror("execlp");
+  sleep(1000);
 
   return 0;
 }
@@ -39,14 +46,16 @@ static int child_proc(void *arg) {
 int main(void) {
   char *stack = malloc(STACK_SIZE);
   pid_t pid;
-  if ((pid = clone(child_proc, stack + STACK_SIZE, CLONE_NEWUTS | CLONE_NEWPID | SIGCHLD, NULL /*arg*/)) == -1) {
+  if ((pid = clone(child_proc, stack + STACK_SIZE, CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWPID | SIGCHLD,
+                   NULL /*arg*/)) == -1) {
     perror("clone error");
   }
 
   printf("pid by clone: %d\n", pid);
 
+  // waitpid(pid, NULL, 0);
   // parent proc
-  sleep(1);
+  sleep(10);
   printf("parent running: \n");
   struct utsname buf;
   uname(&buf);
