@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mount.h>
+#include <sys/stat.h>
 #include <sys/utsname.h>
 #include <unistd.h>
 
@@ -18,9 +20,19 @@ static int child_proc(void *arg) {
 
   uname(&buf);
   printf("nodename in child: %s\n", buf.nodename);
-  sleep(20);
   printf("namespace pid (child): %d\n", getpid());
   printf("namespace ppid: %d\n", getppid());
+
+  mkdir("/proc2", 0555);
+  if (mount("proc", "/proc2", "proc", 0, NULL) == -1) {
+    perror("mount error");
+  }
+  printf("mounting procfs\n");
+
+  execlp("sleep", "sleep", "600", (char *)NULL);
+
+  perror("execlp");
+
   return 0;
 }
 
