@@ -1,6 +1,6 @@
-#include <asm-generic/errno-base.h>
 #define _GNU_SOURCE
 
+#include <asm-generic/errno-base.h>
 #include <dirent.h>
 #include <errno.h>
 #include <sched.h>
@@ -17,6 +17,11 @@
 #define STACK_SIZE 1024 * 64
 
 void virt_init() {
+  if ((mount(NULL, "/", NULL, MS_PRIVATE, NULL)) == -1) {
+    perror("can't change mount propagation of the root");
+    exit(EXIT_FAILURE);
+  }
+
   int chk = mkdir("jail", 0777);
   if (errno != EEXIST && chk == -1) {
     perror("can't create jail directory\n");
@@ -40,7 +45,7 @@ void virt_init() {
       (mount("/usr/lib", "jail/usr/lib", NULL, MS_BIND | MS_REC, NULL)) == -1 ||
       (mount("/lib64", "jail/lib64", NULL, MS_BIND | MS_REC, NULL)) == -1 ||
       (mount("/lib", "jail/lib", NULL, MS_BIND | MS_REC, NULL)) == -1 ||
-      (mount("proc", "jail/proc", "proc", 0, NULL)) == -1) {
+      (mount("/proc", "jail/proc", "proc", 0, NULL)) == -1) {
     perror("can't perform bind mount of required directories");
     exit(EXIT_FAILURE);
   }
