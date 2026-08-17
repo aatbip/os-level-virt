@@ -23,32 +23,32 @@ void virt_init() {
     exit(EXIT_FAILURE);
   }
 
-  if (chroot("./jail") == -1) {
-    perror("chroot");
-  }
-
-  if (chdir("/") == -1) {
-    perror("chdir");
-  }
-
   /*create required directories in the jail - /usr/bin, /usr/lib, /lib64 */
-  chk = mkdir("usr", 0777);
-  chk = mkdir("usr/bin", 0777);
-  chk = mkdir("usr/lib", 0777);
-  chk = mkdir("lib64", 0777);
-  chk = mkdir("proc", 0777);
+  chk = mkdir("jail/usr", 0777);
+  chk = mkdir("jail/usr/bin", 0777);
+  chk = mkdir("jail/usr/lib", 0777);
+  chk = mkdir("jail/lib64", 0777);
+  chk = mkdir("jail/proc", 0777);
   if (errno != EEXIST && chk == -1) {
     perror("can't create required directories\n");
     exit(EXIT_FAILURE);
   }
 
   /*bind mount the required directories*/
-  if ((mount("/usr/bin", "usr/bin", NULL, MS_BIND | MS_REC, NULL) == -1) ||
-      (mount("/usr/lib", "usr/lib", NULL, MS_BIND | MS_REC, NULL)) == -1 ||
-      (mount("/lib64", "lib64", NULL, MS_BIND | MS_REC, NULL)) == -1 ||
-      (mount("proc", "proc", "proc", 0, NULL)) == -1) {
+  if ((mount("/usr/bin", "jail/usr/bin", NULL, MS_BIND | MS_REC, NULL) == -1) ||
+      (mount("/usr/lib", "jail/usr/lib", NULL, MS_BIND | MS_REC, NULL)) == -1 ||
+      (mount("/lib64", "jail/lib64", NULL, MS_BIND | MS_REC, NULL)) == -1 ||
+      (mount("proc", "jail/proc", "proc", 0, NULL)) == -1) {
     perror("can't perform bind mount of required directories");
     exit(EXIT_FAILURE);
+  }
+
+  if (chroot("./jail") == -1) {
+    perror("chroot");
+  }
+
+  if (chdir("/") == -1) {
+    perror("chdir");
   }
 
   char *const _argv[] = {"/usr/bin/sh", NULL};
