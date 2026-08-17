@@ -32,9 +32,10 @@ void virt_init() {
   }
 
   /*create required directories in the jail - /usr/bin, /usr/lib, /lib64 */
-  chk = mkdir("usr/bin", 0700);
-  chk = mkdir("usr/lib", 0700);
-  chk = mkdir("lib64", 0700);
+  chk = mkdir("usr/bin", 0777);
+  chk = mkdir("usr/lib", 0777);
+  chk = mkdir("lib64", 0777);
+  chk = mkdir("proc", 0777);
   if (errno != EEXIST && chk == -1) {
     perror("can't create required directories\n");
     exit(EXIT_FAILURE);
