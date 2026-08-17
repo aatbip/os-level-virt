@@ -1,5 +1,7 @@
 #define _GNU_SOURCE
 
+#include <dirent.h>
+#include <errno.h>
 #include <sched.h>
 #include <signal.h>
 #include <stdio.h>
@@ -24,24 +26,41 @@ static int child_proc(void *arg) {
   printf("namespace pid (child): %d\n", getpid());
   printf("namespace ppid: %d\n", getppid());
 
+  if (chroot("./jail") == -1) {
+    perror("chroot");
+  }
+
+  if (chdir("/") == -1) {
+    perror("chdir");
+  }
+
   if (mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL) == -1) {
     perror("mount error");
   }
 
-  mkdir("./proc2", 0555);
+  mkdir("proc", 0777);
   if (mount("proc", "/proc", "proc", 0, NULL) == -1) {
     perror("mount error");
   }
   printf("mounting procfs\n");
 
-  // if (chroot(".") == -1) {
-  //   perror("chroot");
+  // DIR *dp = opendir("usr/bin");
+  // for (;;) {
+  //   struct dirent *dent = readdir(dp);
+  //   if (!dent)
+  //     break;
+  //
+  //   if (strcmp(dent->d_name, ".") == 0 || strcmp(dent->d_name, "..") == 0 || strcmp(dent->d_name, "sh") != 0)
+  //     continue;
+  //
+  //   printf("here: %s\n", dent->d_name);
   // }
 
-  // printf("here:");
-  execlp("sh", "sh", (char *)NULL);
+  char *const _argv[] = {"/usr/bin/sh", NULL};
+  char *const _env[] = {"PATH=/usr/bin", "TERM=xterm", NULL};
+  execve("/usr/bin/sh", _argv, _env);
 
-  perror("execlp");
+  perror("execve");
 
   return 0;
 }
@@ -53,12 +72,9 @@ int main(void) {
                    NULL /*arg*/)) == -1) {
     perror("clone error");
   }
-
   printf("pid by clone: %d\n", pid);
 
   waitpid(pid, NULL, 0);
-  // parent proc
-  // sleep(500);
   printf("parent running: \n");
   struct utsname buf;
   uname(&buf);

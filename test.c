@@ -1,5 +1,6 @@
 #define _GNU_SOURCE
 
+#include <dirent.h>
 #include <fcntl.h>
 #include <sched.h>
 #include <stdio.h>
@@ -12,14 +13,13 @@ int main(void) {
   int pid = fork();
   if (pid == 0) {
     printf("child: %d\n", getpid());
-    sleep(30);
     if (unshare(CLONE_NEWNS) == -1)
       perror("unshare");
     printf("child mount unshared\n");
-    sleep(30);
+    sleep(1);
     printf("Child mounting tmpfs...\n");
     mount("tmp", "tmp", "tmpfs", MS_REC | MS_PRIVATE, NULL);
-    sleep(20);
+    sleep(1);
     printf("Child opening file in tmp\n");
     int fd = open("tmp/child_file", O_CREAT | O_APPEND | O_RDWR, 0700);
     printf("fd: %d\n", fd);
@@ -28,13 +28,20 @@ int main(void) {
     const char buf[] = "child file";
     if (write(fd, buf, strlen(buf)) == -1)
       perror("writeC");
-    sleep(300);
+    DIR *d = opendir("tmp");
+    for (;;) {
+      struct dirent *dir = readdir(d);
+      if (!dir)
+        break;
+      printf("C files: %s\n", dir->d_name);
+    }
+    sleep(5);
   } else {
     printf("parent: %d\n", getpid());
-    sleep(80);
+    sleep(5);
     printf("Parent mounting tmpfs...\n");
     mount("tmp", "tmp", "tmpfs", 0, NULL);
-    sleep(20);
+    sleep(1);
     printf("Parent opening file in tmp\n");
     int fd = open("tmp/parent_file", O_CREAT | O_APPEND | O_RDWR, 0700);
     printf("fd: %d\n", fd);
@@ -43,7 +50,14 @@ int main(void) {
     const char buf[] = "parent file";
     if (write(fd, buf, strlen(buf)) == -1)
       perror("writeP");
-    sleep(300);
+    DIR *d = opendir("tmp");
+    for (;;) {
+      struct dirent *dir = readdir(d);
+      if (!dir)
+        break;
+      printf("P files: %s\n", dir->d_name);
+    }
+    sleep(5);
   }
   return 0;
 }
