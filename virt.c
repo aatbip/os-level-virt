@@ -17,7 +17,7 @@
 #define STACK_SIZE 1024 * 64
 
 void virt_init() {
-  int chk = mkdir("jail", 0700);
+  int chk = mkdir("jail", 0777);
   if (errno != EEXIST && chk == -1) {
     perror("can't create jail directory\n");
     exit(EXIT_FAILURE);
@@ -32,6 +32,7 @@ void virt_init() {
   }
 
   /*create required directories in the jail - /usr/bin, /usr/lib, /lib64 */
+  chk = mkdir("usr", 0777);
   chk = mkdir("usr/bin", 0777);
   chk = mkdir("usr/lib", 0777);
   chk = mkdir("lib64", 0777);
@@ -45,7 +46,7 @@ void virt_init() {
   if ((mount("/usr/bin", "usr/bin", NULL, MS_BIND | MS_REC, NULL) == -1) ||
       (mount("/usr/lib", "usr/lib", NULL, MS_BIND | MS_REC, NULL)) == -1 ||
       (mount("/lib64", "lib64", NULL, MS_BIND | MS_REC, NULL)) == -1 ||
-      (mount("proc", "/proc", "proc", 0, NULL)) == -1) {
+      (mount("proc", "proc", "proc", 0, NULL)) == -1) {
     perror("can't perform bind mount of required directories");
     exit(EXIT_FAILURE);
   }
@@ -63,37 +64,6 @@ void virt_init() {
 
 static int child_proc(void *arg) {
   virt_init();
-  printf("child running: \n");
-  struct utsname buf;
-  char *new_name = "virt";
-  sethostname(new_name, strlen(new_name));
-
-  uname(&buf);
-  printf("nodename in child: %s\n", buf.nodename);
-  printf("namespace pid (child): %d\n", getpid());
-  printf("namespace ppid: %d\n", getppid());
-
-  if (mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL) == -1) {
-    perror("mount error");
-  }
-
-  mkdir("proc", 0777);
-  if (mount("proc", "/proc", "proc", 0, NULL) == -1) {
-    perror("mount error");
-  }
-  printf("mounting procfs\n");
-
-  // DIR *dp = opendir("usr/bin");
-  // for (;;) {
-  //   struct dirent *dent = readdir(dp);
-  //   if (!dent)
-  //     break;
-  //
-  //   if (strcmp(dent->d_name, ".") == 0 || strcmp(dent->d_name, "..") == 0 || strcmp(dent->d_name, "sh") != 0)
-  //     continue;
-  //
-  //   printf("here: %s\n", dent->d_name);
-  // }
 
   return 0;
 }
@@ -101,17 +71,10 @@ static int child_proc(void *arg) {
 int main(void) {
   char *stack = malloc(STACK_SIZE);
   pid_t pid;
-  if ((pid = clone(child_proc, stack + STACK_SIZE, CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWPID | SIGCHLD,
-                   NULL /*arg*/)) == -1) {
+  if ((pid = clone(child_proc, stack + STACK_SIZE, CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWPID | SIGCHLD, NULL)) == -1) {
     perror("clone error");
   }
-  printf("pid by clone: %d\n", pid);
 
   waitpid(pid, NULL, 0);
-  printf("parent running: \n");
-  struct utsname buf;
-  uname(&buf);
-  printf("nodename in parent: %s\n", buf.nodename);
-
   return 0;
 }
