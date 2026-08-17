@@ -48,6 +48,16 @@ int virt_init() {
     exit(EXIT_FAILURE);
   }
 
+  char *const _argv[] = {"/usr/bin/sh", NULL};
+  char path[1024];
+  snprintf(path, 1024, "PATH=%s", getenv("PATH"));
+  char term[1024];
+  snprintf(term, 1024, "TERM=%s", getenv("TERM"));
+  char *const _env[] = {path, term, NULL};
+  execve("/usr/bin/sh", _argv, _env);
+
+  perror("execve");
+
   return 0;
 }
 
@@ -84,12 +94,6 @@ static int child_proc(void *arg) {
   //
   //   printf("here: %s\n", dent->d_name);
   // }
-
-  char *const _argv[] = {"/usr/bin/sh", NULL};
-  char *const _env[] = {"PATH=/usr/bin", "TERM=xterm", NULL};
-  execve("/usr/bin/sh", _argv, _env);
-
-  perror("execve");
 
   return 0;
 }
