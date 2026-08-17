@@ -29,6 +29,7 @@ void virt_init() {
   chk = mkdir("jail/usr/lib", 0777);
   chk = mkdir("jail/lib64", 0777);
   chk = mkdir("jail/proc", 0777);
+  chk = mkdir("jail/lib", 0777);
   if (errno != EEXIST && chk == -1) {
     perror("can't create required directories\n");
     exit(EXIT_FAILURE);
@@ -38,6 +39,7 @@ void virt_init() {
   if ((mount("/usr/bin", "jail/usr/bin", NULL, MS_BIND | MS_REC, NULL) == -1) ||
       (mount("/usr/lib", "jail/usr/lib", NULL, MS_BIND | MS_REC, NULL)) == -1 ||
       (mount("/lib64", "jail/lib64", NULL, MS_BIND | MS_REC, NULL)) == -1 ||
+      (mount("/lib", "jail/lib", NULL, MS_BIND | MS_REC, NULL)) == -1 ||
       (mount("proc", "jail/proc", "proc", 0, NULL)) == -1) {
     perror("can't perform bind mount of required directories");
     exit(EXIT_FAILURE);
