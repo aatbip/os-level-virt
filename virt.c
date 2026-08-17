@@ -16,7 +16,7 @@
 
 #define STACK_SIZE 1024 * 64
 
-int virt_init() {
+void virt_init() {
   int chk = mkdir("jail", 0700);
   if (errno != EEXIST && chk == -1) {
     perror("can't create jail directory\n");
@@ -32,18 +32,19 @@ int virt_init() {
   }
 
   /*create required directories in the jail - /usr/bin, /usr/lib, /lib64 */
-  chk = mkdir("jail/usr/bin", 0700);
-  chk = mkdir("jail/usr/lib", 0700);
-  chk = mkdir("jail/lib64", 0700);
+  chk = mkdir("usr/bin", 0700);
+  chk = mkdir("usr/lib", 0700);
+  chk = mkdir("lib64", 0700);
   if (errno != EEXIST && chk == -1) {
     perror("can't create required directories\n");
     exit(EXIT_FAILURE);
   }
 
   /*bind mount the required directories*/
-  if ((mount("/usr/bin", "jail/usr/bin", NULL, MS_BIND | MS_REC, NULL) == -1) ||
-      (mount("/usr/lib", "jail/usr/lib", NULL, MS_BIND | MS_REC, NULL)) == -1 ||
-      (mount("/lib64", "jail/lib64", NULL, MS_BIND | MS_REC, NULL)) == -1) {
+  if ((mount("/usr/bin", "usr/bin", NULL, MS_BIND | MS_REC, NULL) == -1) ||
+      (mount("/usr/lib", "usr/lib", NULL, MS_BIND | MS_REC, NULL)) == -1 ||
+      (mount("/lib64", "lib64", NULL, MS_BIND | MS_REC, NULL)) == -1 ||
+      (mount("proc", "/proc", "proc", 0, NULL)) == -1) {
     perror("can't perform bind mount of required directories");
     exit(EXIT_FAILURE);
   }
@@ -57,8 +58,6 @@ int virt_init() {
   execve("/usr/bin/sh", _argv, _env);
 
   perror("execve");
-
-  return 0;
 }
 
 static int child_proc(void *arg) {
