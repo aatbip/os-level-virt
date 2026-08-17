@@ -1,3 +1,4 @@
+#include <asm-generic/errno-base.h>
 #define _GNU_SOURCE
 
 #include <dirent.h>
@@ -15,7 +16,43 @@
 
 #define STACK_SIZE 1024 * 64
 
+int virt_init() {
+  int chk = mkdir("jail", 0700);
+  if (errno != EEXIST && chk == -1) {
+    perror("can't create jail directory\n");
+    exit(EXIT_FAILURE);
+  }
+
+  if (chroot("./jail") == -1) {
+    perror("chroot");
+  }
+
+  if (chdir("/") == -1) {
+    perror("chdir");
+  }
+
+  /*create required directories in the jail - /usr/bin, /usr/lib, /lib64 */
+  chk = mkdir("jail/usr/bin", 0700);
+  chk = mkdir("jail/usr/lib", 0700);
+  chk = mkdir("jail/lib64", 0700);
+  if (errno != EEXIST && chk == -1) {
+    perror("can't create required directories\n");
+    exit(EXIT_FAILURE);
+  }
+
+  /*bind mount the required directories*/
+  if ((mount("/usr/bin", "jail/usr/bin", NULL, MS_BIND | MS_REC, NULL) == -1) ||
+      (mount("/usr/lib", "jail/usr/lib", NULL, MS_BIND | MS_REC, NULL)) == -1 ||
+      (mount("/lib64", "jail/lib64", NULL, MS_BIND | MS_REC, NULL)) == -1) {
+    perror("can't perform bind mount of required directories");
+    exit(EXIT_FAILURE);
+  }
+
+  return 0;
+}
+
 static int child_proc(void *arg) {
+  virt_init();
   printf("child running: \n");
   struct utsname buf;
   char *new_name = "virt";
@@ -25,14 +62,6 @@ static int child_proc(void *arg) {
   printf("nodename in child: %s\n", buf.nodename);
   printf("namespace pid (child): %d\n", getpid());
   printf("namespace ppid: %d\n", getppid());
-
-  if (chroot("./jail") == -1) {
-    perror("chroot");
-  }
-
-  if (chdir("/") == -1) {
-    perror("chdir");
-  }
 
   if (mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL) == -1) {
     perror("mount error");
