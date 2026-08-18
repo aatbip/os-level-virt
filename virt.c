@@ -71,7 +71,9 @@ void virt_init() {
   char term[1024];
   snprintf(term, 1024, "TERM=%s", getenv("TERM"));
   char terminfo[] = "TERMINFO=/usr/share/terminfo";
-  char *const _env[] = {path, term, terminfo, NULL};
+  /*Update hostname and all from argv later on..*/
+  char ps1[] = "PS1=$(whoami)@$(hostname):$(pwd) >> ";
+  char *const _env[] = {path, term, terminfo, ps1, NULL};
   execve("/usr/bin/sh", _argv, _env);
 
   perror("execve");
