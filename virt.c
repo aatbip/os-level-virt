@@ -7,7 +7,6 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sys/mount.h>
 #include <sys/stat.h>
 #include <sys/utsname.h>
@@ -28,13 +27,17 @@ void virt_init() {
     exit(EXIT_FAILURE);
   }
 
-  /*create required directories in the jail - /usr/bin, /usr/lib, /lib64 */
+  /*create required directories in the jail*/
   chk = mkdir("jail/usr", 0777);
   chk = mkdir("jail/usr/bin", 0777);
   chk = mkdir("jail/usr/lib", 0777);
+  chk = mkdir("jail/usr/share", 0777);
   chk = mkdir("jail/lib64", 0777);
   chk = mkdir("jail/proc", 0777);
   chk = mkdir("jail/lib", 0777);
+  chk = mkdir("jail/dev", 0777);
+  chk = mkdir("jail/opt", 0777);
+  chk = mkdir("jail/etc", 0777);
   if (errno != EEXIST && chk == -1) {
     perror("can't create required directories\n");
     exit(EXIT_FAILURE);
@@ -43,8 +46,12 @@ void virt_init() {
   /*bind mount the required directories*/
   if ((mount("/usr/bin", "jail/usr/bin", NULL, MS_BIND | MS_REC, NULL) == -1) ||
       (mount("/usr/lib", "jail/usr/lib", NULL, MS_BIND | MS_REC, NULL)) == -1 ||
+      (mount("/usr/share", "jail/usr/share", NULL, MS_BIND | MS_REC, NULL)) == -1 ||
       (mount("/lib64", "jail/lib64", NULL, MS_BIND | MS_REC, NULL)) == -1 ||
       (mount("/lib", "jail/lib", NULL, MS_BIND | MS_REC, NULL)) == -1 ||
+      (mount("/etc", "jail/etc", NULL, MS_BIND | MS_REC, NULL)) == -1 ||
+      (mount("/dev", "jail/dev", NULL, MS_BIND | MS_REC, NULL)) == -1 ||
+      (mount("/opt", "jail/opt", NULL, MS_BIND | MS_REC, NULL)) == -1 ||
       (mount("/proc", "jail/proc", "proc", 0, NULL)) == -1) {
     perror("can't perform bind mount of required directories");
     exit(EXIT_FAILURE);
@@ -63,7 +70,8 @@ void virt_init() {
   snprintf(path, 1024, "PATH=%s", getenv("PATH"));
   char term[1024];
   snprintf(term, 1024, "TERM=%s", getenv("TERM"));
-  char *const _env[] = {path, term, NULL};
+  char terminfo[] = "TERMINFO=/usr/share/terminfo";
+  char *const _env[] = {path, term, terminfo, NULL};
   execve("/usr/bin/sh", _argv, _env);
 
   perror("execve");

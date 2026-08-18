@@ -11,7 +11,7 @@
 #include <unistd.h>
 
 int main(void) {
-  char *path = getenv("TERM");
+  char *path = getenv("terminfo");
   printf("path %s\n", path);
   // int pid = fork();
   // if (pid == 0) {
